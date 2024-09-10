@@ -82,23 +82,23 @@ systemJSPrototype.getRegister = function () {
 };
 
 export function getOrCreateLoad (loader, id, firstParentUrl, meta) {
-  window.Stopwatch.start('SystemJS core getOrCreateLoad '+id+' '+firstParentUrl);
+  
   var load = loader[REGISTRY][id];
   if (load)
     return load;
+  window.Stopwatch.start('SystemJS core getOrCreateLoad - create '+id+' '+firstParentUrl);
 
   var importerSetters = [];
   var ns = Object.create(null);
   if (toStringTag)
     Object.defineProperty(ns, toStringTag, { value: 'Module' });
 
-  window.Stopwatch.start('SystemJS core getOrCreateLoad instantiatePromise '+id+' '+firstParentUrl);
   var instantiatePromise = Promise.resolve()
   .then(function () {
+    window.Stopwatch.stop('SystemJS core getOrCreateLoad - create '+id+' '+firstParentUrl);
     return loader.instantiate(id, firstParentUrl, meta);
   })
   .then(function (registration) {
-    window.Stopwatch.stop('SystemJS core getOrCreateLoad instantiatePromise '+id+' '+firstParentUrl);
     if (!registration)
       throw Error(errMsg(2, process.env.SYSTEM_PRODUCTION ? id : 'Module ' + id + ' did not instantiate'));
     function _export (name, value) {
