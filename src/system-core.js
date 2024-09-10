@@ -28,14 +28,18 @@ function SystemJS () {
 var systemJSPrototype = SystemJS.prototype;
 
 systemJSPrototype.import = function (id, parentUrl, meta) {
+  window.Stopwatch.start('systemJSPrototype.import '+id+' '+parentUrl);
   var loader = this;
   (parentUrl && typeof parentUrl === 'object') && (meta = parentUrl, parentUrl = undefined);
+  window.Stopwatch.start('systemJSPrototype.import loader.prepareImport '+id+' '+parentUrl);
   return Promise.resolve(loader.prepareImport())
   .then(function() {
+    window.Stopwatch.stop('systemJSPrototype.import loader.prepareImport '+id+' '+parentUrl);
     return loader.resolve(id, parentUrl, meta);
   })
   .then(function (id) {
     var load = getOrCreateLoad(loader, id, undefined, meta);
+    window.Stopwatch.stop('systemJSPrototype.import '+id+' '+parentUrl);
     return load.C || topLevelLoad(loader, load);
   });
 };
@@ -78,6 +82,7 @@ systemJSPrototype.getRegister = function () {
 };
 
 export function getOrCreateLoad (loader, id, firstParentUrl, meta) {
+  window.Stopwatch.start('SystemJS core getOrCreateLoad '+id+' '+firstParentUrl);
   var load = loader[REGISTRY][id];
   if (load)
     return load;
@@ -87,11 +92,13 @@ export function getOrCreateLoad (loader, id, firstParentUrl, meta) {
   if (toStringTag)
     Object.defineProperty(ns, toStringTag, { value: 'Module' });
 
+  window.Stopwatch.start('SystemJS core getOrCreateLoad instantiatePromise '+id+' '+firstParentUrl);
   var instantiatePromise = Promise.resolve()
   .then(function () {
     return loader.instantiate(id, firstParentUrl, meta);
   })
   .then(function (registration) {
+    window.Stopwatch.stop('SystemJS core getOrCreateLoad instantiatePromise '+id+' '+firstParentUrl);
     if (!registration)
       throw Error(errMsg(2, process.env.SYSTEM_PRODUCTION ? id : 'Module ' + id + ' did not instantiate'));
     function _export (name, value) {
@@ -139,6 +146,7 @@ export function getOrCreateLoad (loader, id, firstParentUrl, meta) {
     throw err;
   });
 
+  window.Stopwatch.start('SystemJS core getOrCreateLoad linkPromise '+id+' '+firstParentUrl);
   var linkPromise = instantiatePromise
   .then(function (instantiation) {
     return Promise.all(instantiation[0].map(function (dep, i) {
@@ -162,6 +170,7 @@ export function getOrCreateLoad (loader, id, firstParentUrl, meta) {
       });
     }))
     .then(function (depLoads) {
+      window.Stopwatch.stop('SystemJS core getOrCreateLoad linkPromise '+id+' '+firstParentUrl);
       load.d = depLoads;
     });
   });
@@ -169,6 +178,7 @@ export function getOrCreateLoad (loader, id, firstParentUrl, meta) {
     linkPromise.catch(function () {});
 
   // Capital letter = a promise function
+  window.Stopwatch.stop('SystemJS core getOrCreateLoad '+id+' '+firstParentUrl);
   return load = loader[REGISTRY][id] = {
     id: id,
     // importerSetters, the setters functions registered to this dependency
@@ -232,11 +242,14 @@ function instantiateAll (loader, load, parent, loaded) {
 }
 
 function topLevelLoad (loader, load) {
+  window.Stopwatch.start('topLevelLoad');
   return load.C = instantiateAll(loader, load, load, {})
   .then(function () {
+    window.Stopwatch.stop('topLevelLoad');
     return postOrderExec(loader, load, {});
   })
   .then(function () {
+    window.Stopwatch.stop('topLevelLoad');
     return load.n;
   });
 }

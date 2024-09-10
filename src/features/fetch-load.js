@@ -14,9 +14,14 @@ if (typeof fetch !== 'undefined')
 var instantiate = systemJSPrototype.instantiate;
 var jsContentTypeRegEx = /^(text|application)\/(x-)?javascript(;|$)/;
 systemJSPrototype.instantiate = function (url, parent, meta) {
+  window.Stopwatch.start('systemJSPrototype.instantiate url '+url);
+  window.Stopwatch.start('systemJSPrototype.instantiate fetch '+url);
+  window.Stopwatch.start('systemJSPrototype.instantiate fetch source '+url);
   var loader = this;
-  if (!this.shouldFetch(url, parent, meta))
+  if (!this.shouldFetch(url, parent, meta)){
+    window.Stopwatch.stop('systemJSPrototype.instantiate url '+url);
     return instantiate.apply(this, arguments);
+  }
   return this.fetch(url, {
     credentials: 'same-origin',
     integrity: importMap.integrity[url],
@@ -28,11 +33,17 @@ systemJSPrototype.instantiate = function (url, parent, meta) {
     var contentType = res.headers.get('content-type');
     if (!contentType || !jsContentTypeRegEx.test(contentType))
       throw Error(errMsg(4, process.env.SYSTEM_PRODUCTION ? contentType : 'Unknown Content-Type "' + contentType + '", loading ' + url + (parent ? ' from ' + parent : '')));
+    window.Stopwatch.stop('systemJSPrototype.instantiate fetch source '+url);
     return res.text().then(function (source) {
       if (source.indexOf('//# sourceURL=') < 0)
         source += '\n//# sourceURL=' + url;
+      window.Stopwatch.start('systemJSPrototype.instantiate eval source '+url);
       (0, eval)(source);
-      return loader.getRegister(url);
+      window.Stopwatch.stop('systemJSPrototype.instantiate eval source '+url);
+      window.Stopwatch.start('systemJSPrototype.instantiate getRegister '+url);
+      var regResult = loader.getRegister(url);
+      window.Stopwatch.stop('systemJSPrototype.instantiate getRegister '+url);
+      return regResult;
     });
   });
 };
