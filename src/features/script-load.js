@@ -36,7 +36,6 @@ var lastAutoImportUrl, lastAutoImportDeps, lastAutoImportTimeout;
 var autoImportCandidates = {};
 var systemRegister = systemJSPrototype.register;
 systemJSPrototype.register = function (deps, declare) {
-  window.Stopwatch.start('SystemJs register');
   if (hasDocument && document.readyState === 'loading' && typeof deps !== 'string') {
     var scripts = document.querySelectorAll('script[src]');
     var lastScript = scripts[scripts.length - 1];
@@ -46,9 +45,7 @@ systemJSPrototype.register = function (deps, declare) {
       // if this is already a System load, then the instantiate has already begun
       // so this re-import has no consequence
       var loader = this;
-      window.Stopwatch.start('SystemJs setTimeout lastAutoImportTimeout');
       lastAutoImportTimeout = setTimeout(function () {
-        window.Stopwatch.stop('SystemJs setTimeout lastAutoImportTimeout');
         autoImportCandidates[lastScript.src] = [deps, declare];
         loader.import(lastScript.src);
       });
@@ -57,13 +54,11 @@ systemJSPrototype.register = function (deps, declare) {
   else {
     lastAutoImportDeps = undefined;
   }
-  window.Stopwatch.stop('SystemJs register');
   return systemRegister.call(this, deps, declare);
 };
 
 var lastWindowErrorUrl, lastWindowError;
 systemJSPrototype.instantiate = function (url, firstParentUrl) {
-  window.Stopwatch.start('SystemJS instantiate '+url);
   var autoImportRegistration = autoImportCandidates[url];
   if (autoImportRegistration) {
     delete autoImportCandidates[url];
@@ -76,7 +71,7 @@ systemJSPrototype.instantiate = function (url, firstParentUrl) {
         reject(Error(errMsg(3, process.env.SYSTEM_PRODUCTION ? [url, firstParentUrl].join(', ') : 'Error loading ' + url + (firstParentUrl ? ' from ' + firstParentUrl : ''))));
       });
       script.addEventListener('load', function () {
-        window.Stopwatch.stop('SystemJS script load (append -> load event) '+url);
+        window.Stopwatch.stop('SystemJS script load (append <script> -> load event) '+url);
         window.Stopwatch.start('SystemJS script document.head.removeChild '+url);
         document.head.removeChild(script);
         window.Stopwatch.stop('SystemJS script document.head.removeChild '+url);
@@ -86,14 +81,16 @@ systemJSPrototype.instantiate = function (url, firstParentUrl) {
           reject(lastWindowError);
         }
         else {
+          window.Stopwatch.start('SystemJS script load handler - loader.getRegister, resolve '+url);
           var register = loader.getRegister(url);
           // Clear any auto import registration for dynamic import scripts during load
           if (register && register[0] === lastAutoImportDeps)
             clearTimeout(lastAutoImportTimeout);
           resolve(register);
+          window.Stopwatch.stop('SystemJS script load handler - loader.getRegister, resolve '+url);
         }
       });
-      window.Stopwatch.start('SystemJS script load (append -> load event) '+url);
+      window.Stopwatch.start('SystemJS script load (append <script> -> load event) '+url);
       document.head.appendChild(script);
     });
   });

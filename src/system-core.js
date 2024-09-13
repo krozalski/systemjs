@@ -86,7 +86,6 @@ export function getOrCreateLoad (loader, id, firstParentUrl, meta) {
   var load = loader[REGISTRY][id];
   if (load)
     return load;
-  window.Stopwatch.start('SystemJS core getOrCreateLoad - create '+id+' '+firstParentUrl);
 
   var importerSetters = [];
   var ns = Object.create(null);
@@ -95,7 +94,6 @@ export function getOrCreateLoad (loader, id, firstParentUrl, meta) {
 
   var instantiatePromise = Promise.resolve()
   .then(function () {
-    window.Stopwatch.stop('SystemJS core getOrCreateLoad - create '+id+' '+firstParentUrl);
     return loader.instantiate(id, firstParentUrl, meta);
   })
   .then(function (registration) {
@@ -146,7 +144,6 @@ export function getOrCreateLoad (loader, id, firstParentUrl, meta) {
     throw err;
   });
 
-  window.Stopwatch.start('SystemJS core getOrCreateLoad linkPromise '+id+' '+firstParentUrl);
   var linkPromise = instantiatePromise
   .then(function (instantiation) {
     return Promise.all(instantiation[0].map(function (dep, i) {
@@ -170,7 +167,6 @@ export function getOrCreateLoad (loader, id, firstParentUrl, meta) {
       });
     }))
     .then(function (depLoads) {
-      window.Stopwatch.stop('SystemJS core getOrCreateLoad linkPromise '+id+' '+firstParentUrl);
       load.d = depLoads;
     });
   });
@@ -178,7 +174,6 @@ export function getOrCreateLoad (loader, id, firstParentUrl, meta) {
     linkPromise.catch(function () {});
 
   // Capital letter = a promise function
-  window.Stopwatch.stop('SystemJS core getOrCreateLoad '+id+' '+firstParentUrl);
   return load = loader[REGISTRY][id] = {
     id: id,
     // importerSetters, the setters functions registered to this dependency
@@ -242,14 +237,11 @@ function instantiateAll (loader, load, parent, loaded) {
 }
 
 function topLevelLoad (loader, load) {
-  window.Stopwatch.start('topLevelLoad');
   return load.C = instantiateAll(loader, load, load, {})
   .then(function () {
-    window.Stopwatch.stop('topLevelLoad');
     return postOrderExec(loader, load, {});
   })
   .then(function () {
-    window.Stopwatch.stop('topLevelLoad');
     return load.n;
   });
 }
