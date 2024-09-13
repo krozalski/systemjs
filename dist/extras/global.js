@@ -32,6 +32,7 @@
     }
 
     function noteGlobalProps () {
+      window.Stopwatch.start('SystemJS.noteGlobalProps');
       // alternatively Object.keys(global).pop()
       // but this may be faster (pending benchmarks)
       firstGlobalProp = secondGlobalProp = undefined;
@@ -45,30 +46,39 @@
           secondGlobalProp = p;
         lastGlobalProp = p;
       }
+      window.Stopwatch.stop('SystemJS.noteGlobalProps');
       return lastGlobalProp;
     }
 
     var impt = systemJSPrototype.import;
     systemJSPrototype.import = function (id, parentUrl, meta) {
+      window.Stopwatch.start('SystemJS.import with noteGlobalProps');
       noteGlobalProps();
-      return impt.call(this, id, parentUrl, meta);
+      var result = impt.call(this, id, parentUrl, meta);
+      window.Stopwatch.stop('SystemJS.import with noteGlobalProps');
+      return result;
     };
 
     var emptyInstantiation = [[], function () { return {} }];
 
     var getRegister = systemJSPrototype.getRegister;
     systemJSPrototype.getRegister = function () {
+      window.Stopwatch.start('global.js systemJSPrototype.getRegister');
       var lastRegister = getRegister.call(this);
-      if (lastRegister)
+      if (lastRegister){
+        window.Stopwatch.stop('global.js systemJSPrototype.getRegister');
         return lastRegister;
+      }
 
       // no registration -> attempt a global detection as difference from snapshot
       // when multiple globals, we take the global value to be the last defined new global object property
       // for performance, this will not support multi-version / global collisions as previous SystemJS versions did
       // note in Edge, deleting and re-adding a global does not change its ordering
       var globalProp = getGlobalProp(this.firstGlobalProp);
-      if (!globalProp)
+      if (!globalProp){
+        window.Stopwatch.stop('global.js systemJSPrototype.getRegister');
         return emptyInstantiation;
+      }
 
       var globalExport;
       try {
@@ -78,6 +88,7 @@
         return emptyInstantiation;
       }
 
+      window.Stopwatch.stop('global.js systemJSPrototype.getRegister');
       return [[], function (_export) {
         return {
           execute: function () {
